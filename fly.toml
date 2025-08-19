@@ -1,23 +1,33 @@
-# fly.toml app configuration file generated for traccar-railway on 2025-08-19T10:47:18Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
-app = 'traccar-railway'
-primary_region = 'syd'
+app = "traccar-railway"
+primary_region = "nrt"
 
 [build]
+  image = "traccar/traccar:latest"
 
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+[env]
+  TZ = "Asia/Tokyo"
 
-[[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
-  cpus = 1
-  memory_mb = 1024
+# ← 永続化。あとでボリュームを作ってマウントします
+[mounts]
+  source = "traccar_data"
+  destination = "/opt/traccar"
+
+# --- Traccar Web UI (内部 8082) を 外部 80/443 で公開 ---
+[[services]]
+  internal_port = 8082
+  protocol = "tcp"
+  processes = ["app"]
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+# --- デバイス受信用 Osmand/HTTP (内部 5055) を 外部 5055 で公開 ---
+[[services]]
+  internal_port = 5055
+  protocol = "tcp"
+  processes = ["app"]
+  [[services.ports]]
+    port = 5055
